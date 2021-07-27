@@ -27,11 +27,12 @@ import (
 
 	"google.golang.org/grpc"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
+	"google.golang.org/grpc/status"
 )
 
 const (
 	address     = "localhost:50051"
-	defaultName = "world"
+	defaultName = "japan"
 )
 
 func main() {
@@ -44,15 +45,31 @@ func main() {
 	c := pb.NewGreeterClient(conn)
 
 	// Contact the server and print out its response.
-	name := defaultName
+	names := []string{defaultName}
 	if len(os.Args) > 1 {
-		name = os.Args[1]
+		names = os.Args[1:]
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	for _, name := range names {
+		SayHello(c, name)
+	}
+}
+
+// SayHello wraps grpc call SayHello
+func SayHello(c pb.GreeterClient, name string) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
 	r, err := c.SayHello(ctx, &pb.HelloRequest{Name: name})
 	if err != nil {
-		log.Fatalf("could not greet: %v", err)
+		log.Printf("could not greet: %v", err)
+		if st, ok := status.FromError(err); ok {
+			log.Printf("Got error status: %s", st.Message())
+			for _, detail := range st.Details() {
+				if mvmErr, ok := detail.(*pb.MvmError); ok {
+					log.Printf("Got MvmErr code %d, message %s", mvmErr.LibmvmError, mvmErr.Msg)
+				}
+			}
+		}
+	} else {
+		log.Printf("Greeting: %s", r.GetMessage())
 	}
-	log.Printf("Greeting: %s", r.GetMessage())
 }

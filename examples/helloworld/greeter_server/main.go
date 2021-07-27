@@ -23,9 +23,12 @@ import (
 	"context"
 	"log"
 	"net"
+	"strings"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	pb "google.golang.org/grpc/examples/helloworld/helloworld"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -39,7 +42,18 @@ type server struct {
 
 // SayHello implements helloworld.GreeterServer
 func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
-	log.Printf("Received: %v", in.GetName())
+	//log.Printf("Received: %v", in.GetName())
+	if strings.EqualFold(in.GetName(), "japan") {
+		mvmErr := &pb.MvmError{
+			Msg:         "Cannot greet Japan",
+			LibmvmError: 1234,
+		}
+		if st, err := status.New(codes.Internal, "error from golang").WithDetails(mvmErr); err != nil {
+			return nil, status.Errorf(codes.Internal, "error from golang")
+		} else {
+			return nil, st.Err()
+		}
+	}
 	return &pb.HelloReply{Message: "Hello " + in.GetName()}, nil
 }
 

@@ -36,3 +36,10 @@ message HelloRequest {
 message HelloReply {
   string message = 1;
 }
+
+message MvmError {
+  // Not used when in grpc error details; extract error message from the grpc error
+  string msg = 1;
+
+  uint32 libmvm_error = 2;
+}
